@@ -1,91 +1,64 @@
-import random
+import random as rand
+import copy
 
 
-board = [
-    7,
-    8,
-    0,
-    4,
-    0,
-    0,
-    1,
-    2,
-    0,
-    6,
-    0,
-    0,
-    0,
-    7,
-    5,
-    0,
-    0,
-    9,
-    0,
-    0,
-    0,
-    6,
-    0,
-    1,
-    0,
-    7,
-    8,
-    0,
-    0,
-    7,
-    0,
-    4,
-    0,
-    2,
-    6,
-    0,
-    0,
-    0,
-    1,
-    0,
-    5,
-    0,
-    9,
-    3,
-    0,
-    9,
-    0,
-    4,
-    0,
-    6,
-    0,
-    0,
-    0,
-    5,
-    0,
-    7,
-    0,
-    3,
-    0,
-    0,
-    0,
-    1,
-    2,
-    1,
-    2,
-    0,
-    0,
-    0,
-    7,
-    4,
-    0,
-    0,
-    0,
-    4,
-    9,
-    2,
-    0,
-    6,
-    0,
-    0,
-    7,
-]
+class Grid:
+    def __init__(self, board=None):
+        if board:
+            self.board = board[:]
+        else:
+            self.board = random_board()
+        self.solutions = []
+        self.find_possible()
+        self.fill()
 
-potential = [{i + 1 for i in range(9)} for j in range(81)]
+    def row(self, cell):
+        return self.board[cell // 9 : cell // 9 + 9]
+
+    def col(self, cell):
+        return self.board[cell % 9 : 81 : 9]
+
+    def block(self, cell):
+        r = cell // 27
+        c = cell % 9 // 3 * 3 
+        return [
+            *self.board[r + c : r + c + 3],
+            *self.board[r + c + 9 : r + c + 12],
+            *self.board[r + c + 18 : r + c + 21],
+        ]
+
+    def find_possible(self):
+        possible = [{} for _ in range(81)]
+        for i in range(81):
+            if self.board[i] == 0:
+                possible[i] = set(range(1, 10)) - set(self.row(i)).union(
+                    set(self.col(i)), set(self.block(i))
+                )
+        self.possible = possible
+    
+    def fill(self):
+        done = False
+        while not done:
+            done = True
+            for i in range(81):
+                if self.board[i] and len(self.possible[i]) == 1:
+                    self.board[i] = self.possible[i].pop()
+                    self.find_possible()
+                    done = False
+
+    def solve(self, multiple_solutions = False):
+        pass
+
+
+
+def random_board():
+    board = [0 for _ in range(81)]
+    potential = [{i + 1 for i in range(9)} for j in range(81)]
+    while not solved(board, potential):
+        i = board.index(0)
+        board[i] = rand.choice(tuple(potential[i]))
+        board, potential = fill(board, potential)
+    return board, potential
 
 
 def row(board, x):
@@ -106,7 +79,7 @@ def block(board, n):
     ]
 
 
-def reduce_(board, potential):
+def fill(board, potential):
     newboard, newpot = list(board), list(potential)
     done = False
     while not done:
@@ -153,7 +126,7 @@ def solved(board, potential):
 
 
 def solve(board, potential):
-    (newboard, newpot) = reduce_(board, potential)
+    (newboard, newpot) = fill(board, potential)
     if solved(newboard, newpot):
         return newboard, newpot, True
     else:
@@ -167,3 +140,6 @@ def solve(board, potential):
         return newboard, newpot, s
 
 
+b, p = random_board()
+
+print(b)
