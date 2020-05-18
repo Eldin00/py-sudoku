@@ -1,26 +1,27 @@
-import random as rand
+import random as rnd
 import copy
 
 
 class Grid:
     def __init__(self, board=None):
-        if board:
+        if board and len(board) == 81:
             self.board = board[:]
         else:
-            self.board = random_board()
+            self.board = self.random_board()
         self.solutions = []
         self.find_possible()
         self.fill()
 
     def row(self, cell):
-        return self.board[cell // 9 : cell // 9 + 9]
+        c = cell // 9
+        return self.board[c * 9 : c * 9 + 9]
 
     def col(self, cell):
         return self.board[cell % 9 : 81 : 9]
 
     def block(self, cell):
-        r = cell // 27
-        c = cell % 9 // 3 * 3 
+        r = cell // 27 * 27
+        c = cell % 9 // 3 * 3
         return [
             *self.board[r + c : r + c + 3],
             *self.board[r + c + 9 : r + c + 12],
@@ -35,111 +36,76 @@ class Grid:
                     set(self.col(i)), set(self.block(i))
                 )
         self.possible = possible
-    
+
     def fill(self):
         done = False
         while not done:
             done = True
             for i in range(81):
-                if self.board[i] and len(self.possible[i]) == 1:
+                if self.board[i] == 0 and len(self.possible[i]) == 1:
                     self.board[i] = self.possible[i].pop()
                     self.find_possible()
                     done = False
 
-    def solve(self, multiple_solutions = False):
-        pass
-
-
-
-def random_board():
-    board = [0 for _ in range(81)]
-    potential = [{i + 1 for i in range(9)} for j in range(81)]
-    while not solved(board, potential):
-        i = board.index(0)
-        board[i] = rand.choice(tuple(potential[i]))
-        board, potential = fill(board, potential)
-    return board, potential
-
-
-def row(board, x):
-    return board[x * 9 : x * 9 + 9]
-
-
-def col(board, y):
-    return board[y:81:9]
-
-
-def block(board, n):
-    r = (n // 3) * 27
-    c = (n % 3) * 3
-    return [
-        *board[c + r : c + r + 3],
-        *board[c + r + 9 : c + r + 12],
-        *board[c + r + 18 : c + r + 21],
-    ]
-
-
-def fill(board, potential):
-    newboard, newpot = list(board), list(potential)
-    done = False
-    while not done:
-        done = True
+    def is_valid(self):
+        rv = False
         for i in range(81):
-            if newboard[i] == 0:
-                newpot[i] = set(newpot[i]) - set(
-                    row(newboard, i // 9)
-                    + col(newboard, i % 9)
-                    + block(newboard, i // 27 * 3 + i % 9 // 3)
-                )
-            else:
-                newpot[i] = set([])
-            if len(newpot[i]) == 1:
-                newboard[i] = newpot[i].pop()
-                done = False
-    return (newboard, newpot)
-
-
-def valid_board(board, potential):
-    rv = False
-    for i in range(81):
-        rv = True
-        if board[i] == 0:
-            if len(potential[i]) < 2:
+            rv = True
+            if self.board[i] == 0:
+                if len(self.possible[i]) < 2:
+                    rv = False
+                    break
+                else:
+                    continue
+            if (
+                (self.row(i).count(self.board[i]) > 1)
+                or (self.col(i).count(self.board[i]) > 1)
+                or (self.block(i).count(self.board[i]) > 1)
+            ):
                 rv = False
                 break
+        return rv
+
+    def solve(self, multiple_solutions=False):
+        board_stack = []
+        solved = 0
+        s = 2 if multiple_solutions else 1
+        while solved < s:
+            if 0 in self.board:
+                #improve the efficiency of backtracking by starting from the cells with the fewest posible options.
+                m = min(p for p in self.possible if len(p) > 0)
+                i = self.possible.index(m)
+                board_stack.append(
+                    {
+                        "brd": self.board[:],
+                        "index": i,
+                        "value": min(self.possible[i]),
+                        "pos": copy.deepcopy(self.possible),
+                    }
+                )
+                self.board[i] = min(self.possible[i])
+                self.find_possible()
+                self.fill()
+
+            if self.is_valid() and self.board not in self.solutions:
+                if self.board.count(0) == 0:
+                    solved += 1
+
+                    self.solutions.append(self.board[:])
+
             else:
-                continue
+                if len(board_stack) == 0:
+                    break
+                else:
+                    while True:
+                        t = board_stack.pop()
+                        self.board = t["brd"]
+                        self.possible = t["pos"]
+                        self.possible[t["index"]].remove(t["value"])
+                        if len(self.possible[t["index"]]) > 0 or len(board_stack) == 0:
+                            break
+            if len(board_stack) == 0 and self.board.count(0) == 0:
+                break
 
-        if (
-            (row(board, i // 9).count(board[i]) > 1)
-            or (col(board, i % 9).count(board[i]) > 1)
-            or (block(board, i // 27 + i % 9 // 3).count(board[i]) > 1)
-        ):
-            rv = False
-            break
-
-    return rv
-
-
-def solved(board, potential):
-    return valid_board(board, potential) and board.count(0) == 0
-
-
-def solve(board, potential):
-    (newboard, newpot) = fill(board, potential)
-    if solved(newboard, newpot):
-        return newboard, newpot, True
-    else:
-        s = False
-        while not s:
-            i = newboard.index(0)
-            if len(newpot[i]) == 0:
-                return board, potential, False
-            newboard[i] = newpot[i].pop()
-            (newboard, newpot, s) = solve(list(newboard), list(newpot))
-        return newboard, newpot, s
-
-
-b, p = random_board()
-
-print(b)
+    def random_board(self):
+        return []
