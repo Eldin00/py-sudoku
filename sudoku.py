@@ -7,6 +7,12 @@ class Grid:
         self.board = board[:] if board and len(board) == 81 else [0 for _ in range(81)]
         self.find_possible()
 
+    def __repr__(self):
+        return self.board
+
+    def __str__(self):
+        return str(self.board)
+
     def row(self, cell):
         c = cell // 9
         return self.board[c * 9 : c * 9 + 9]
@@ -32,13 +38,12 @@ class Grid:
                 )
         self.possible = possible
 
-
     def is_valid(self):
         rv = False
         for i in range(81):
             rv = True
             if self.board[i] == 0:
-                if len(self.possible[i]) < 2:
+                if len(self.possible[i]) < 1:
                     rv = False
                     break
                 else:
@@ -53,13 +58,9 @@ class Grid:
         return rv
 
 
-
-    def random_board(self):
-        return []
-
 class Solver:
-    def __init__(self, board = None):
-        self.board = Grid(board)
+    def __init__(self, board=None):
+        self.board = board if board else Grid()
         self.solutions = []
 
     def solve(self, multiple_solutions=False):
@@ -102,6 +103,7 @@ class Solver:
                             break
             if not board_stack and self.board.board.count(0) == 0:
                 break
+        return (self.solutions, self.board)
 
     def fill(self):
         done = False
@@ -112,3 +114,27 @@ class Solver:
                     self.board.board[i] = self.board.possible[i].pop()
                     self.board.find_possible()
                     done = False
+        return self.board
+
+
+class RandomBoard:
+    def generate(self):
+        self.board = Grid()
+        complete = False
+        while not complete:
+            i = self.board.board.index(0)
+            self.board.board[i] = rnd.choice(list(self.board.possible[i]))
+            self.board.find_possible()
+            self.board = Solver(self.board).fill()
+            if not self.board.is_valid():
+                self.board = Grid()
+            else:
+                if self.board.board.count(0) == 0:
+                    complete = True
+        return self.board
+
+
+x = RandomBoard()
+x.generate()
+for i in range(9):
+    print (x.board.row(i*9))
