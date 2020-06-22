@@ -134,7 +134,3 @@ class RandomBoard:
         return self.board
 
 
-x = RandomBoard()
-x.generate()
-for i in range(9):
-    print (x.board.row(i*9))
