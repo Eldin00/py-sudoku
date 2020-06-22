@@ -4,13 +4,8 @@ import copy
 
 class Grid:
     def __init__(self, board=None):
-        if board and len(board) == 81:
-            self.board = board[:]
-        else:
-            self.board = self.random_board()
-        self.solutions = []
+        self.board = board[:] if board and len(board) == 81 else [0 for _ in range(81)]
         self.find_possible()
-        self.fill()
 
     def row(self, cell):
         c = cell // 9
@@ -37,15 +32,6 @@ class Grid:
                 )
         self.possible = possible
 
-    def fill(self):
-        done = False
-        while not done:
-            done = True
-            for i in range(81):
-                if self.board[i] == 0 and len(self.possible[i]) == 1:
-                    self.board[i] = self.possible[i].pop()
-                    self.find_possible()
-                    done = False
 
     def is_valid(self):
         rv = False
@@ -66,46 +52,63 @@ class Grid:
                 break
         return rv
 
+
+
+    def random_board(self):
+        return []
+
+class Solver:
+    def __init__(self, board = None):
+        self.board = Grid(board)
+        self.solutions = []
+
     def solve(self, multiple_solutions=False):
         board_stack = []
         solved = 0
         s = 2 if multiple_solutions else 1
         while solved < s:
-            if 0 in self.board:
-                #improve the efficiency of backtracking by starting from the cells with the fewest posible options.
-                m = min(p for p in self.possible if len(p) > 0)
-                i = self.possible.index(m)
+            if 0 in self.board.board:
+                # improve the efficiency of backtracking by starting from the cells with the fewest posible options.
+                m = min(p for p in self.board.possible if len(p) > 0)
+                i = self.board.possible.index(m)
                 board_stack.append(
                     {
-                        "brd": self.board[:],
+                        "brd": self.board.board[:],
                         "index": i,
-                        "value": min(self.possible[i]),
-                        "pos": copy.deepcopy(self.possible),
+                        "value": min(self.board.possible[i]),
+                        "pos": copy.deepcopy(self.board.possible),
                     }
                 )
-                self.board[i] = min(self.possible[i])
-                self.find_possible()
+                self.board.board[i] = min(self.board.possible[i])
+                self.board.find_possible()
                 self.fill()
 
-            if self.is_valid() and self.board not in self.solutions:
-                if self.board.count(0) == 0:
+            if self.board.is_valid() and self.board.board not in self.solutions:
+                if self.board.board.count(0) == 0:
                     solved += 1
 
-                    self.solutions.append(self.board[:])
+                    self.solutions.append(self.board.board[:])
 
             else:
-                if len(board_stack) == 0:
+                if not board_stack:
                     break
                 else:
                     while True:
                         t = board_stack.pop()
-                        self.board = t["brd"]
-                        self.possible = t["pos"]
-                        self.possible[t["index"]].remove(t["value"])
-                        if len(self.possible[t["index"]]) > 0 or len(board_stack) == 0:
+                        self.board.board = t["brd"]
+                        self.board.possible = t["pos"]
+                        self.board.possible[t["index"]].remove(t["value"])
+                        if len(self.board.possible[t["index"]]) > 0 or not board_stack:
                             break
-            if len(board_stack) == 0 and self.board.count(0) == 0:
+            if not board_stack and self.board.board.count(0) == 0:
                 break
 
-    def random_board(self):
-        return []
+    def fill(self):
+        done = False
+        while not done:
+            done = True
+            for i in range(81):
+                if self.board.board[i] == 0 and len(self.board.possible[i]) == 1:
+                    self.board.board[i] = self.board.possible[i].pop()
+                    self.board.find_possible()
+                    done = False

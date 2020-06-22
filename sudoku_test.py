@@ -1,5 +1,5 @@
 import pytest
-from solver import Grid
+from sudoku import Solver
 
 puzzle1 =  [0,0,0,2,6,0,7,0,1,
             6,8,0,0,7,0,0,9,0,
@@ -43,11 +43,11 @@ puzzle2_solution = [1,2,6,4,3,7,9,5,8,
 7,3,1,8,5,2,6,4,9,]
 
 def test_simple_puzzle():
-    g = Grid(puzzle1)
+    g = Solver(puzzle1)
     g.solve()
     assert len(g.solutions) == 1 and g.solutions[0] == puzzle1_solution, "Puzzle not solved correctly"
 
 def test_hard_puzzle():
-    g = Grid(puzzle2)
+    g = Solver(puzzle2)
     g.solve()
     assert len(g.solutions) == 1 and g.solutions[0] == puzzle2_solution, "Puzzle not solved correctly"
