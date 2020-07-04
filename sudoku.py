@@ -4,7 +4,11 @@ import copy
 
 class Grid:
     def __init__(self, board=None):
-        self.board = board[:] if board and len(board) == 81 else [0 for _ in range(81)]
+        if board is not None and len(board) != 81:
+            raise ValueError(
+                f"A sudoku grid must contain 81 cells. The supplied grid contains {len(board)} cells."
+            )
+        self.board = board[:] if board else [0 for _ in range(81)]
         self.find_possible()
 
     def __repr__(self):
@@ -58,79 +62,73 @@ class Grid:
         return rv
 
 
-class Solver:
-    def __init__(self, board=None):
-        self.board = board if board else Grid()
-        self.solutions = []
+def solve(grid, multiple_solutions=False):
+    solutions = []
+    board_stack = []
+    solved = 0
+    s = 2 if multiple_solutions else 1
+    while solved < s:
+        if 0 in grid.board:
+            # improve the efficiency of backtracking by starting from the cells with the fewest posible options.
+            m = min(p for p in grid.possible if len(p) > 0)
+            i = grid.possible.index(m)
+            board_stack.append(
+                {
+                    "brd": grid.board[:],                        
+                    "index": i,
+                    "value": min(grid.possible[i]),
+                    "pos": copy.deepcopy(grid.possible),
+                }
+            )
+            grid.board[i] = min(grid.possible[i])
+            grid.find_possible()
+            fill_board(grid)
 
-    def solve(self, multiple_solutions=False):
-        board_stack = []
-        solved = 0
-        s = 2 if multiple_solutions else 1
-        while solved < s:
-            if 0 in self.board.board:
-                # improve the efficiency of backtracking by starting from the cells with the fewest posible options.
-                m = min(p for p in self.board.possible if len(p) > 0)
-                i = self.board.possible.index(m)
-                board_stack.append(
-                    {
-                        "brd": self.board.board[:],
-                        "index": i,
-                        "value": min(self.board.possible[i]),
-                        "pos": copy.deepcopy(self.board.possible),
-                    }
-                )
-                self.board.board[i] = min(self.board.possible[i])
-                self.board.find_possible()
-                self.fill()
+        if grid.is_valid() and grid.board not in solutions:
+            if grid.board.count(0) == 0:
+                solved += 1
 
-            if self.board.is_valid() and self.board.board not in self.solutions:
-                if self.board.board.count(0) == 0:
-                    solved += 1
+                solutions.append(grid.board[:])
 
-                    self.solutions.append(self.board.board[:])
-
-            else:
-                if not board_stack:
-                    break
-                else:
-                    while True:
-                        t = board_stack.pop()
-                        self.board.board = t["brd"]
-                        self.board.possible = t["pos"]
-                        self.board.possible[t["index"]].remove(t["value"])
-                        if len(self.board.possible[t["index"]]) > 0 or not board_stack:
-                            break
-            if not board_stack and self.board.board.count(0) == 0:
+        else:
+            if not board_stack:
                 break
-        return (self.solutions, self.board)
-
-    def fill(self):
-        done = False
-        while not done:
-            done = True
-            for i in range(81):
-                if self.board.board[i] == 0 and len(self.board.possible[i]) == 1:
-                    self.board.board[i] = self.board.possible[i].pop()
-                    self.board.find_possible()
-                    done = False
-        return self.board
-
-
-class RandomBoard:
-    def generate(self):
-        self.board = Grid()
-        complete = False
-        while not complete:
-            i = self.board.board.index(0)
-            self.board.board[i] = rnd.choice(list(self.board.possible[i]))
-            self.board.find_possible()
-            self.board = Solver(self.board).fill()
-            if not self.board.is_valid():
-                self.board = Grid()
             else:
-                if self.board.board.count(0) == 0:
-                    complete = True
-        return self.board
+                while True:
+                    t = board_stack.pop()
+                    grid.board = t["brd"]
+                    grid.possible = t["pos"]
+                    grid.possible[t["index"]].remove(t["value"])
+                    if len(grid.possible[t["index"]]) > 0 or not board_stack:
+                        break
+        if not board_stack and grid.board.count(0) == 0:
+            break
+    return (solutions, grid)
 
+def fill_board(grid):
+    done = False
+    while not done:
+        done = True
+        for i in range(81):
+            if grid.board[i] == 0 and len(grid.possible[i]) == 1:
+                grid.board[i] = grid.possible[i].pop()
+                grid.find_possible()
+                done = False
+    return grid
+
+
+def generate_random_board():
+    grid = Grid()
+    complete = False
+    while not complete:
+        i = grid.board.index(0)
+        grid.board[i] = rnd.choice(list(grid.possible[i]))
+        grid.find_possible()
+        grid = fill_board(grid)
+        if not grid.is_valid():
+            grid = Grid()
+        else:
+            if grid.board.count(0) == 0:
+                complete = True
+    return grid
 

@@ -1,5 +1,5 @@
 import pytest
-from sudoku import Solver
+import sudoku
 
 puzzle1 =  [0,0,0,2,6,0,7,0,1,
             6,8,0,0,7,0,0,9,0,
@@ -42,12 +42,27 @@ puzzle2_solution = [1,2,6,4,3,7,9,5,8,
 5,4,8,7,6,9,2,3,1,
 7,3,1,8,5,2,6,4,9,]
 
+
 def test_simple_puzzle():
-    g = Solver(puzzle1)
-    g.solve()
-    assert len(g.solutions) == 1 and g.solutions[0] == puzzle1_solution, "Puzzle not solved correctly"
+    g = sudoku.Grid(puzzle1)
+    solutions, _ = sudoku.solve(g)
+    assert len(solutions) == 1 and solutions[0] == puzzle1_solution, "Puzzle not solved correctly"
 
 def test_hard_puzzle():
-    g = Solver(puzzle2)
-    g.solve()
-    assert len(g.solutions) == 1 and g.solutions[0] == puzzle2_solution, "Puzzle not solved correctly"
+    g = sudoku.Grid(puzzle2)
+    solutions, _ = sudoku.solve(g)
+    assert len(solutions) == 1 and solutions[0] == puzzle2_solution, "Puzzle not solved correctly"
+
+
+def test_grid_row():
+    g = sudoku.Grid(puzzle2_solution)
+    assert g.row(27) == [4,5,7,1,9,3,8,6,2,]
+
+def test_grid_column():
+    g = sudoku.Grid(puzzle2_solution)
+    assert g.col(5) == [7,1,5,3,6,8,4,9,2,]
+
+def test_grid_block():
+    g = sudoku.Grid(puzzle2_solution)
+    assert g.block(51) == [8,6,2,5,1,7,3,9,4,]
+    
