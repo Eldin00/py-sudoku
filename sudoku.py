@@ -17,10 +17,12 @@ class Grid:
     def __str__(self):
         return str(self.board)
 
+    # Given a cell on the board, return the row which contains that cell.
     def row(self, cell):
         c = cell // 9
         return self.board[c * 9 : c * 9 + 9]
 
+    # Given a cell on the board, return the column which contains that cell.
     def col(self, cell):
         return self.board[cell % 9 : 81 : 9]
 
@@ -74,7 +76,7 @@ def solve(grid, multiple_solutions=False):
             i = grid.possible.index(m)
             board_stack.append(
                 {
-                    "brd": grid.board[:],                        
+                    "brd": grid.board[:],
                     "index": i,
                     "value": min(grid.possible[i]),
                     "pos": copy.deepcopy(grid.possible),
@@ -101,9 +103,10 @@ def solve(grid, multiple_solutions=False):
                     grid.possible[t["index"]].remove(t["value"])
                     if len(grid.possible[t["index"]]) > 0 or not board_stack:
                         break
-        if not board_stack and grid.board.count(0) == 0:
+        if not board_stack and 0 in grid.board:
             break
     return (solutions, grid)
+
 
 def fill_board(grid):
     done = False
@@ -132,3 +135,30 @@ def generate_random_board():
                 complete = True
     return grid
 
+
+def make_playable(grid, dificulty):
+    difs = [12, 18, 28, 42, 60]
+    original = grid.board[:]
+    r = rnd.sample(range(81), difs[dificulty])
+    for i in r:
+        grid.board[i] = 0
+    grid.find_possible()
+    unsolved = grid.board[:]
+    valid = False
+    while not valid:
+        solutions, _ = solve(grid, True)
+        if len(solutions) == 1:
+            valid = True
+        else:
+            i = rnd.choice(r)
+            unsolved[i] = original[i]
+            r.remove(i)
+            grid.board = unsolved[:]
+            grid.find_possible()
+    return Grid(unsolved)
+
+
+grid = generate_random_board()
+u = make_playable(Grid(grid.board), 4)
+print(grid)
+print(u)
