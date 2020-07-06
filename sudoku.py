@@ -158,7 +158,3 @@ def make_playable(grid, dificulty):
     return Grid(unsolved)
 
 
-grid = generate_random_board()
-u = make_playable(Grid(grid.board), 4)
-print(grid)
-print(u)
