@@ -9,6 +9,7 @@ class Grid:
                 f"A sudoku grid must contain 81 cells. The supplied grid contains {len(board)} cells."
             )
         self.board = board[:] if board else [0 for _ in range(81)]
+        self.original = self.board[:]
         self.find_possible()
 
     def __repr__(self):
@@ -137,7 +138,9 @@ def generate_random_board():
 
 
 def make_playable(grid, dificulty):
-    difs = [12, 18, 28, 42, 60]
+    difs = [15, 22, 33, 49, 70]
+    # I'm using number of missing values as a proxy for dificulty for now. May look into adding a 
+    # better dificulty heuristic in the future.
     original = grid.board[:]
     r = rnd.sample(range(81), difs[dificulty])
     for i in r:
@@ -156,5 +159,3 @@ def make_playable(grid, dificulty):
             grid.board = unsolved[:]
             grid.find_possible()
     return Grid(unsolved)
-
-
