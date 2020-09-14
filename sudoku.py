@@ -158,4 +158,5 @@ def make_playable(grid, dificulty):
             r.remove(i)
             grid.board = unsolved[:]
             grid.find_possible()
-    return Grid(unsolved)
+    
+    return ([original], Grid(unsolved))

@@ -1,16 +1,22 @@
 import pygame
 import sudoku
+import sys
 from pygame.locals import *
 
-WINSIZE = 81
-WINSIZEMULT = 6
-WINHEIGHT = WINSIZE * WINSIZEMULT
-WINWIDTH = WINSIZE * WINSIZEMULT
-BLOCKSIZE = WINSIZE * WINSIZEMULT // 3
+GRIDSIZE = 81
+GRIDSIZEMULT = 6
+WINHEIGHT = GRIDSIZE * GRIDSIZEMULT
+GRIDWIDTH = GRIDSIZE * GRIDSIZEMULT
+WINWIDTH = GRIDWIDTH + 150
+BLOCKSIZE = GRIDSIZE * GRIDSIZEMULT // 3
 CELLSIZE = BLOCKSIZE // 3
 NUMSUBSIZE = CELLSIZE // 3
 FPS = 15
 
+RESETBUTTONPOSX = GRIDWIDTH + 20
+RESETBUTTONPOSY = 20
+RESETBUTTONHEIGHT = 30
+RESETBUTTONWIDTH = 100
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -23,7 +29,7 @@ LTBLUEGREY = (220, 220, 250)
 def main():
     global FPSCLOCK, DISPLAYSURF, BASICFONT, BASICFONTSIZE, LARGEFONT, LARGEFONTSIZE
     pygame.init()
-    DISPLAYSURF = pygame.display.set_mode((WINHEIGHT, WINWIDTH))
+    DISPLAYSURF = pygame.display.set_mode((WINWIDTH, WINHEIGHT))
     FPSCLOCK = pygame.time.Clock()
     pygame.display.update()
     FPSCLOCK.tick(FPS)
@@ -34,8 +40,20 @@ def main():
     LARGEFONTSIZE = 55
     LARGEFONT = pygame.font.Font("freesansbold.ttf", LARGEFONTSIZE)
     DISPLAYSURF.fill(WHITE)
+    reset_button_pressed = False
+
     drawgrid()
-    grid = sudoku.make_playable(sudoku.generate_random_board(), 2)
+    drawbutton(
+        RESETBUTTONPOSX,
+        RESETBUTTONPOSY,
+        RESETBUTTONHEIGHT,
+        RESETBUTTONWIDTH,
+        "Reset",
+        reset_button_pressed,
+    )
+    solution, grid = sudoku.make_playable(sudoku.generate_random_board(), 2)
+    original_grid = grid.board[:]
+
     drawcells(grid)
     mousex = 999999999
     mousey = 999999999
@@ -58,13 +76,42 @@ def main():
                 mousebutton = event.button
 
             if mouseclicked:
-                if mousebutton == pygame.BUTTON_RIGHT:
+                if mousebutton == pygame.BUTTON_RIGHT and mousex < GRIDWIDTH:
                     grid = togglesubcell(mousex, mousey, grid)
                 elif mousebutton == pygame.BUTTON_LEFT:
-                    grid = togglecell(mousex, mousey, grid)
+                    if mousex < GRIDWIDTH:
+                        grid = togglecell(mousex, mousey, grid)
+                    elif (
+                        RESETBUTTONPOSX + 5
+                        < mousex
+                        < RESETBUTTONPOSX + RESETBUTTONWIDTH
+                        and RESETBUTTONPOSY
+                        < mousey
+                        < RESETBUTTONPOSY + RESETBUTTONHEIGHT
+                    ):
+                        grid = sudoku.Grid(original_grid)
+
+            if pygame.mouse.get_pressed()[0]:
+                if (
+                    RESETBUTTONPOSX + 5 < mousex < RESETBUTTONPOSX + RESETBUTTONWIDTH
+                    and RESETBUTTONPOSY < mousey < RESETBUTTONPOSY + RESETBUTTONHEIGHT
+                ):
+                    reset_button_pressed = True
+                else:
+                    reset_button_pressed = False
+            else:
+                reset_button_pressed = False
 
             DISPLAYSURF.fill(WHITE)
             drawgrid()
+            drawbutton(
+                RESETBUTTONPOSX,
+                RESETBUTTONPOSY,
+                RESETBUTTONHEIGHT,
+                RESETBUTTONWIDTH,
+                "Reset",
+                reset_button_pressed,
+            )
             drawcells(grid)
             drawbox(mousex, mousey)
 
@@ -78,14 +125,14 @@ def drawgrid():
                 DISPLAYSURF, LTGREY, (i * CELLSIZE, 0), (i * CELLSIZE, WINHEIGHT)
             )
             pygame.draw.line(
-                DISPLAYSURF, LTGREY, (0, i * CELLSIZE), (WINHEIGHT, i * CELLSIZE)
+                DISPLAYSURF, LTGREY, (0, i * CELLSIZE), (GRIDWIDTH, i * CELLSIZE)
             )
         else:
             pygame.draw.line(
                 DISPLAYSURF, BLACK, (i * CELLSIZE, 0), (i * CELLSIZE, WINHEIGHT)
             )
             pygame.draw.line(
-                DISPLAYSURF, BLACK, (0, i * CELLSIZE), (WINHEIGHT, i * CELLSIZE)
+                DISPLAYSURF, BLACK, (0, i * CELLSIZE), (GRIDWIDTH, i * CELLSIZE)
             )
 
 
@@ -122,12 +169,12 @@ def populatesubcells(celldata, x, y, color):
 
 
 def togglecell(mousex, mousey, grid):
-    x = mousex * 9 // WINWIDTH
+    x = mousex * 9 // GRIDWIDTH
     y = mousey * 9 // WINHEIGHT
     cell = x + y * 9
     if grid.original[cell]:
         return grid
-    xsub = (mousex * 27) // WINWIDTH
+    xsub = (mousex * 27) // GRIDWIDTH
     ysub = (mousey * 27) // WINHEIGHT
     value = (xsub % 3) + (3 * (ysub % 3)) + 1
     if grid.board[cell] == 0:
@@ -140,15 +187,15 @@ def togglecell(mousex, mousey, grid):
 
 
 def togglesubcell(mousex, mousey, grid):
-    x = mousex * 9 // WINWIDTH
+    x = mousex * 9 // GRIDWIDTH
     y = mousey * 9 // WINHEIGHT
-    xsub = (mousex * 27) // WINWIDTH
+    xsub = (mousex * 27) // GRIDWIDTH
     ysub = (mousey * 27) // WINHEIGHT
     cell = x + y * 9
     if grid.board[cell]:
         return grid
 
-    xsub = (mousex * 27) // WINWIDTH
+    xsub = (mousex * 27) // GRIDWIDTH
     ysub = (mousey * 27) // WINHEIGHT
     value = (xsub % 3) + (3 * (ysub % 3)) + 1
 
@@ -160,9 +207,32 @@ def togglesubcell(mousex, mousey, grid):
 
 
 def drawbox(mousex, mousey):
-    boxx = ((mousex * 27) // WINWIDTH) * (NUMSUBSIZE)
+    boxx = ((mousex * 27) // GRIDWIDTH) * (NUMSUBSIZE)
     boxy = ((mousey * 27) // WINHEIGHT) * (NUMSUBSIZE)
-    pygame.draw.rect(DISPLAYSURF, BLUE, (boxx, boxy, NUMSUBSIZE, NUMSUBSIZE), 1)
+    if boxx < GRIDWIDTH:
+        pygame.draw.rect(DISPLAYSURF, BLUE, (boxx, boxy, NUMSUBSIZE, NUMSUBSIZE), 1)
+
+
+def drawbutton(posx, posy, height, width, text, pressed):
+    BUTTONFONT = pygame.font.Font("freesansbold.ttf", int(height * 0.8))
+    cellsurf = BUTTONFONT.render("%s" % text, True, BLACK)
+    cellrect = cellsurf.get_rect()
+    if not pressed:
+        pygame.draw.rect(DISPLAYSURF, DKGREY, (posx, posy + 5, width - 5, height), 0)
+        pygame.draw.rect(DISPLAYSURF, WHITE, (posx + 5, posy, width, height), 0)
+        pygame.draw.rect(DISPLAYSURF, BLACK, (posx + 5, posy, width, height), 1)
+        cellrect.topleft = (
+            posx + 5 + (width - cellsurf.get_width()) // 2,
+            posy + (height - cellsurf.get_height()) // 2,
+        )
+    else:
+        pygame.draw.rect(DISPLAYSURF, WHITE, (posx, posy + 5, width - 5, height), 0)
+        pygame.draw.rect(DISPLAYSURF, BLACK, (posx, posy + 5, width - 5, height), 1)
+        cellrect.topleft = (
+            posx + (width - cellsurf.get_width()) // 2,
+            posy + 5 + (height - cellsurf.get_height()) // 2,
+        )
+    DISPLAYSURF.blit(cellsurf, cellrect)
 
 
 if __name__ == "__main__":
