@@ -2,8 +2,23 @@ import random as rnd
 import copy
 
 
-class Grid:
+class Grid: 
+#The Grid object contains a representation of a sudoku board, along with methods to access a 
+#particular row, column, or 3x3 block from the board. Also includes a method to ensure that a board
+#contains no contridictions, and a method to determine what values could go in empty cells without 
+#creating a contridiction. 
+
     def __init__(self, board=None):
+        """
+        __init__(self, board=None)
+        Initializes a Grid object. If a board is supplied, it validates the length of the board, and 
+        if valid, sets the values in Grid.board accordingly. If no board is supplied, it populates 
+        Grid.board with zeros, corresponding to a blank board. It also computes what values could go
+        into any blank cell without creating a contridiction.
+
+        Parameters:
+            board : A list of integers 0-9 representing a sudoku board. Defaults to None.
+        """
         if board is not None and len(board) != 81:
             raise ValueError(
                 f"A sudoku grid must contain 81 cells. The supplied grid contains {len(board)} cells."
@@ -13,21 +28,53 @@ class Grid:
         self.find_possible()
 
     def __repr__(self):
+        """
+        __repr__(self)
+        Returns a list of integers 0-9 representing the current state of the board.
+        """
         return self.board
 
     def __str__(self):
+        """
+        __str__(self)
+        Returns a string representation of the current state of the board.
+        """
         return str(self.board)
 
-    # Given a cell on the board, return the row which contains that cell.
+
     def row(self, cell):
+        """
+        row(self, cell)
+        Given a cell on the board, return a list representing the row on the board which contains that
+        cell.
+
+        Parameters:
+            cell : A number 0-80 representing a cell on the board
+        """
         c = cell // 9
         return self.board[c * 9 : c * 9 + 9]
 
     # Given a cell on the board, return the column which contains that cell.
     def col(self, cell):
+        """
+        col(self, cell)
+        Given a cell on the board, return a list representing the column on the board which contains 
+        that cell.
+
+        Parameters:
+            cell : A number 0-80 representing a cell on the board
+        """
         return self.board[cell % 9 : 81 : 9]
 
     def block(self, cell):
+        """
+        block(self, cell)
+        Given a cell on the board, return a list representing the 3x3 block on the board which contains 
+        that cell.
+
+        Parameters:
+            cell : A number 0-80 representing a cell on the board
+        """
         r = cell // 27 * 27
         c = cell % 9 // 3 * 3
         return [
@@ -37,6 +84,11 @@ class Grid:
         ]
 
     def find_possible(self):
+        """
+        find_possible(self)
+        Based on the current state of the board, determine what values could go in any blank cell
+        without creating a contradiction
+        """
         possible = [{} for _ in range(81)]
         for i in range(81):
             if self.board[i] == 0:
@@ -46,6 +98,10 @@ class Grid:
         self.possible = possible
 
     def is_valid(self):
+        """
+        Returns true if every blank cell has at least one possible value, and populated cells contain
+        no contradictions. Otherwise returns false.
+        """
         rv = False
         for i in range(81):
             rv = True
@@ -66,6 +122,16 @@ class Grid:
 
 
 def solve(grid, multiple_solutions=False):
+    """
+    solve(grid, multiple_solutions=False)
+    Finds a solution to a sudoku board. Optionally finds a second soluton if one exists, for the purpose
+    of verifying that the board has a unique solution.
+
+    Parameters:
+        grid : A Grid object representing the sudoku board to be solved.
+        multiple_solutions : A boolean indicating whether or not to keep going after finding one
+                            solution. Defaults to False.
+    """
     solutions = []
     board_stack = []
     solved = 0
@@ -110,6 +176,14 @@ def solve(grid, multiple_solutions=False):
 
 
 def fill_board(grid):
+    """
+    fill_board(grid)
+    Given a sudoku board, aply the heuristic of repeatedly filling in any cell which has only 
+    one possible value, then recomputing the possible values for empty cells.
+
+    Parameters:
+        grid : A Grid object representing the sudoku board to attempt to fill values for.
+    """
     done = False
     while not done:
         done = True
@@ -122,6 +196,10 @@ def fill_board(grid):
 
 
 def generate_random_board():
+    """
+    generate_random_board()
+    Generate a valid, randomly filled, solved sudoku board.
+    """
     grid = Grid()
     complete = False
     while not complete:
@@ -138,6 +216,15 @@ def generate_random_board():
 
 
 def make_playable(grid, dificulty):
+    """
+    make_playable(gird, dificulty)
+    Take a solved sudoku board, blank out cells to create a valid board for the player to solve.
+
+    Parameters:
+        grid : A Grid object representing a solved sudoku board.
+        dificulty : an integer from 0-4 representing the dificulty of the resulting playable board.
+                    Higher numbers will try to blank out more cells.
+    """
     difs = [15, 22, 33, 49, 70]
     # I'm using number of missing values as a proxy for dificulty for now. May look into adding a 
     # better dificulty heuristic in the future.
