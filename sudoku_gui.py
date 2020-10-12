@@ -4,7 +4,7 @@ import sys
 from pygame.locals import *
 
 
-#Constants that we need for drawing the grid and numbers.
+# Constants that we need for drawing the grid and numbers.
 GRIDSIZE = 81
 GRIDSIZEMULT = 6
 WINHEIGHT = GRIDSIZE * GRIDSIZEMULT
@@ -19,6 +19,20 @@ RESETBUTTONPOSX = GRIDWIDTH + 20
 RESETBUTTONPOSY = 20
 RESETBUTTONHEIGHT = 30
 RESETBUTTONWIDTH = 100
+NEWBUTTONPOSX = GRIDWIDTH + 20
+NEWBUTTONPOSY = 60
+NEWBUTTONHEIGHT = 30
+NEWBUTTONWIDTH = 100
+
+DIFMINUSPOSX = GRIDWIDTH + 25
+DIFMINUSWIDTH = 30
+DIFVALUEPOSX = DIFMINUSPOSX + DIFMINUSWIDTH
+DIFVALUEWIDTH = 30
+DIFPLUSPOSX = DIFVALUEPOSX + DIFVALUEWIDTH
+DIFPLUSWIDTH = 30
+DIFPOSY = 130
+DIFHEIGHT = 30
+
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -30,7 +44,7 @@ LTBLUEGREY = (220, 220, 250)
 
 def main():
     """
-    main() 
+    main()
     Begin by setting up the board, then enter the main game loop.
     """
     global FPSCLOCK, DISPLAYSURF, BASICFONT, BASICFONTSIZE, LARGEFONT, LARGEFONTSIZE
@@ -46,7 +60,12 @@ def main():
     LARGEFONTSIZE = 55
     LARGEFONT = pygame.font.Font("freesansbold.ttf", LARGEFONTSIZE)
     DISPLAYSURF.fill(WHITE)
+    dificulty = 2
+
     reset_button_pressed = False
+    new_button_pressed = False
+    minus_pressed = False
+    plus_pressed = False
 
     drawgrid()
     drawbutton(
@@ -57,7 +76,19 @@ def main():
         "Reset",
         reset_button_pressed,
     )
-    solution, grid = sudoku.make_playable(sudoku.generate_random_board(), 2)
+
+    drawbutton(
+        NEWBUTTONPOSX,
+        NEWBUTTONPOSY,
+        NEWBUTTONHEIGHT,
+        NEWBUTTONWIDTH,
+        "New",
+        new_button_pressed,
+    )
+
+    drawdifcontrol(dificulty, minus_pressed, plus_pressed)
+
+    solution, grid = sudoku.make_playable(sudoku.generate_random_board(), dificulty)
     original_grid = grid.board[:]
 
     drawcells(grid)
@@ -96,6 +127,26 @@ def main():
                         < RESETBUTTONPOSY + RESETBUTTONHEIGHT
                     ):
                         grid = sudoku.Grid(original_grid)
+                    elif (
+                        NEWBUTTONPOSX + 5 < mousex < NEWBUTTONPOSX + NEWBUTTONWIDTH
+                        and NEWBUTTONPOSY < mousey < NEWBUTTONPOSY + NEWBUTTONHEIGHT
+                    ):
+                        solution, grid = sudoku.make_playable(
+                            sudoku.generate_random_board(), dificulty
+                        )
+                        original_grid = grid.board[:]
+                    elif (
+                        DIFMINUSPOSX  < mousex < DIFMINUSPOSX + DIFMINUSWIDTH
+                        and DIFPOSY < mousey < DIFPOSY + DIFHEIGHT 
+                        and dificulty > 0
+                    ):
+                        dificulty -= 1
+                    elif (
+                        DIFPLUSPOSX  < mousex < DIFPLUSPOSX + DIFPLUSWIDTH
+                        and DIFPOSY < mousey < DIFPOSY + DIFHEIGHT 
+                        and dificulty < 4
+                    ):
+                        dificulty += 1
 
             if pygame.mouse.get_pressed()[0]:
                 if (
@@ -105,8 +156,36 @@ def main():
                     reset_button_pressed = True
                 else:
                     reset_button_pressed = False
+
+                if (
+                    NEWBUTTONPOSX + 5 < mousex < NEWBUTTONPOSX + NEWBUTTONWIDTH
+                    and NEWBUTTONPOSY < mousey < NEWBUTTONPOSY + NEWBUTTONHEIGHT
+                ):
+                    new_button_pressed = True
+                else:
+                    new_button_pressed = False
+
+                if (
+                    DIFMINUSPOSX < mousex < DIFMINUSPOSX + DIFMINUSWIDTH
+                    and DIFPOSY < mousey < DIFPOSY + DIFHEIGHT
+                ):
+                    minus_pressed = True
+                else:
+                    minus_pressed = False
+
+                if (
+                    DIFPLUSPOSX < mousex < DIFPLUSPOSX + DIFPLUSWIDTH
+                    and DIFPOSY < mousey < DIFPOSY + DIFHEIGHT
+                ):
+                    plus_pressed = True
+                else:
+                    plus_pressed = False
+
             else:
                 reset_button_pressed = False
+                new_button_pressed = False
+                minus_pressed = False
+                plus_pressed = False
 
             DISPLAYSURF.fill(WHITE)
             drawgrid()
@@ -118,6 +197,18 @@ def main():
                 "Reset",
                 reset_button_pressed,
             )
+
+            drawbutton(
+                NEWBUTTONPOSX,
+                NEWBUTTONPOSY,
+                NEWBUTTONHEIGHT,
+                NEWBUTTONWIDTH,
+                "New",
+                new_button_pressed,
+            )
+
+            drawdifcontrol(dificulty, minus_pressed, plus_pressed)
+
             drawcells(grid)
             drawbox(mousex, mousey)
 
@@ -176,7 +267,7 @@ def populatecells(celldata, x, y, color):
     populatecells(celldata,x,y,color)
     Draws the number the cell is set to in the cell.
 
-    Parameters are: 
+    Parameters are:
         celldata : A number 1-9 to draw in the cell.
         x, y : Coordinates of the upper left hand corner of the cell.
         color : The color to use when drawing the number.
@@ -192,7 +283,7 @@ def populatesubcells(celldata, x, y, color):
     populatesubcells(celldata,x,y,color)
     Draws a number in a sub-cell. Each cell has 9 sub-cells aranged in a 3x3 grid.
 
-    Parameters are: 
+    Parameters are:
         celldata : A number 1-9 to draw in the subcell.
         x, y : Coordinates of the upper left hand corner of the subcell.
         color : The color to use when drawing the number.
@@ -206,7 +297,7 @@ def populatesubcells(celldata, x, y, color):
 def togglecell(mousex, mousey, grid):
     """
     togglecell(mousex, mousey, grid)
-    Sets the value of a cell based the mouse location, and whether or not the cell under the mouse is 
+    Sets the value of a cell based the mouse location, and whether or not the cell under the mouse is
     currently set. If the cell is not currently set, it is changed based on which subgrid the mouse is
     over. Otherwise, if the cell is currently set, it un-sets it.
 
@@ -238,8 +329,8 @@ def togglesubcell(mousex, mousey, grid):
     """
     togglesubcell(mousex, mousey, grid)
     Colors the number in a sub-cell based the mouse location, and whether or not the sub-cell under the
-    mouse correlates to a possible value of for the containing cell. If the number of the sub-cell is 
-    currently a posibility, change it to the lighter color. If it is not, change it to the darker 
+    mouse correlates to a possible value of for the containing cell. If the number of the sub-cell is
+    currently a posibility, change it to the lighter color. If it is not, change it to the darker
     color. Update the Grid accordingly.
 
     Returns the updated Grid.
@@ -314,6 +405,42 @@ def drawbutton(posx, posy, height, width, text, pressed):
             posy + 5 + (height - cellsurf.get_height()) // 2,
         )
     DISPLAYSURF.blit(cellsurf, cellrect)
+
+def drawdifcontrol(dificulty, minuspressed, pluspressed):
+    """ 
+    drawdifcontrol(dificulty, minuspressed, pluspressed)
+    Draws the dificulty selector control.
+
+    Parameters: 
+    dificulty : An integer representing the currently selected dificulty.
+    minuspressed : A boolean indicating whether or not the '-' portion of the control is pressed.
+    pluspressed : A boolean indicatinh whether or not the '+' portion of the control is pressed.
+    """
+    CTLFONT = pygame.font.Font("freesansbold.ttf", int(DIFHEIGHT * 0.8))
+    minus = CTLFONT.render("-", True, BLACK)
+    plus = CTLFONT.render("+", True, BLACK)
+    dif = CTLFONT.render("%s" % (dificulty + 1), True, BLACK)
+    minusrect = minus.get_rect()
+    plusrect = plus.get_rect()
+    difrect = dif.get_rect()
+    minusrect.topleft = (DIFMINUSPOSX + (DIFMINUSWIDTH - minus.get_width()) // 2,
+                         DIFPOSY + (DIFHEIGHT - minus.get_height()) // 2,)
+    plusrect.topleft = (DIFPLUSPOSX + (DIFPLUSWIDTH - plus.get_width()) // 2,
+                         DIFPOSY + (DIFHEIGHT - plus.get_height()) // 2,)
+    difrect.topleft = (DIFVALUEPOSX + (DIFVALUEWIDTH - dif.get_width()) // 2,
+                         DIFPOSY + (DIFHEIGHT - dif.get_height()) // 2,)
+
+    minuscolor = LTGREY if minuspressed else WHITE
+    pluscolor = LTGREY if pluspressed else WHITE
+    pygame.draw.rect(DISPLAYSURF, minuscolor, (DIFMINUSPOSX,DIFPOSY,DIFMINUSWIDTH,DIFHEIGHT),0)
+    pygame.draw.rect(DISPLAYSURF, BLACK, (DIFMINUSPOSX,DIFPOSY,DIFMINUSWIDTH,DIFHEIGHT),1)
+    pygame.draw.rect(DISPLAYSURF, WHITE, (DIFVALUEPOSX,DIFPOSY,DIFVALUEWIDTH,DIFHEIGHT),0)
+    pygame.draw.rect(DISPLAYSURF, BLACK, (DIFVALUEPOSX,DIFPOSY,DIFVALUEWIDTH,DIFHEIGHT),1)
+    pygame.draw.rect(DISPLAYSURF, pluscolor, (DIFPLUSPOSX,DIFPOSY,DIFPLUSWIDTH,DIFHEIGHT),0)
+    pygame.draw.rect(DISPLAYSURF, BLACK, (DIFPLUSPOSX,DIFPOSY,DIFPLUSWIDTH,DIFHEIGHT),1)
+    DISPLAYSURF.blit(minus, minusrect)
+    DISPLAYSURF.blit(dif, difrect)
+    DISPLAYSURF.blit(plus, plusrect)
 
 
 if __name__ == "__main__":
