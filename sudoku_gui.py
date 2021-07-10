@@ -40,7 +40,9 @@ LTGREY = (180, 180, 180)
 DKGREY = (75, 75, 75)
 BLUE = (0, 0, 200)
 LTBLUEGREY = (220, 220, 250)
-
+MIDBLUEGREY = (100, 100, 180)
+DKBLUEGREY = (50, 50, 120)
+GREEN = (0, 200, 0)
 
 def main():
     """
@@ -67,8 +69,8 @@ def main():
     minus_pressed = False
     plus_pressed = False
 
-    drawgrid()
-    drawbutton(
+    draw_grid()
+    draw_button(
         RESETBUTTONPOSX,
         RESETBUTTONPOSY,
         RESETBUTTONHEIGHT,
@@ -77,7 +79,7 @@ def main():
         reset_button_pressed,
     )
 
-    drawbutton(
+    draw_button(
         NEWBUTTONPOSX,
         NEWBUTTONPOSY,
         NEWBUTTONHEIGHT,
@@ -86,16 +88,17 @@ def main():
         new_button_pressed,
     )
 
-    drawdifcontrol(dificulty, minus_pressed, plus_pressed)
+    draw_dif_control(dificulty, minus_pressed, plus_pressed)
 
     solution, grid = sudoku.make_playable(sudoku.generate_random_board(), dificulty)
     original_grid = grid.board[:]
 
-    drawcells(grid)
+    draw_cells(grid, False)
     mousex = 999999999
     mousey = 999999999
 
     while True:  # main game loop
+        winner = (grid.board == solution)
         mouseclicked = False
         mousebutton = 0
         for event in pygame.event.get():
@@ -114,10 +117,10 @@ def main():
 
             if mouseclicked:
                 if mousebutton == pygame.BUTTON_RIGHT and mousex < GRIDWIDTH:
-                    grid = togglesubcell(mousex, mousey, grid)
+                    grid = toggle_subcell(mousex, mousey, grid)
                 elif mousebutton == pygame.BUTTON_LEFT:
                     if mousex < GRIDWIDTH:
-                        grid = togglecell(mousex, mousey, grid)
+                        grid = toggle_cell(mousex, mousey, grid)
                     elif (
                         RESETBUTTONPOSX + 5
                         < mousex
@@ -188,8 +191,8 @@ def main():
                 plus_pressed = False
 
             DISPLAYSURF.fill(WHITE)
-            drawgrid()
-            drawbutton(
+            draw_grid()
+            draw_button(
                 RESETBUTTONPOSX,
                 RESETBUTTONPOSY,
                 RESETBUTTONHEIGHT,
@@ -198,7 +201,7 @@ def main():
                 reset_button_pressed,
             )
 
-            drawbutton(
+            draw_button(
                 NEWBUTTONPOSX,
                 NEWBUTTONPOSY,
                 NEWBUTTONHEIGHT,
@@ -207,15 +210,18 @@ def main():
                 new_button_pressed,
             )
 
-            drawdifcontrol(dificulty, minus_pressed, plus_pressed)
+            draw_dif_control(dificulty, minus_pressed, plus_pressed)
 
-            drawcells(grid)
-            drawbox(mousex, mousey)
+            draw_cells(grid, winner)
+            draw_box(mousex, mousey)
+
+
 
         pygame.display.update()
+   
 
 
-def drawgrid():
+def draw_grid():
     """
     drawgrid()
     Draws the 3x3 grid of lines on the board, including the seperator between the grid and the button area.
@@ -237,7 +243,7 @@ def drawgrid():
             )
 
 
-def drawcells(grid: sudoku.Grid):
+def draw_cells(grid: sudoku.Grid, winner: bool):
     """
     drawcells(grid: sudoku.Grid)
     Draws numbers on the board based on the values of cells in the Grid.
@@ -248,21 +254,31 @@ def drawcells(grid: sudoku.Grid):
     for i in range(81):
         if grid.board[i] == 0:
             for j in range(1, 10):
-                color = LTGREY if j in grid.possible[i] else LTBLUEGREY
-                populatesubcells(
+                if winner:
+                    color = GREEN
+                elif j in grid.possible[i]:
+                    color = DKBLUEGREY
+                else:
+                    color = LTGREY
+                populate_subcells(
                     j,
                     (i % 9 * CELLSIZE) + ((j - 1) % 3 * NUMSUBSIZE) + 2,
                     (i // 9 * CELLSIZE) + ((j - 1) // 3 * NUMSUBSIZE) + 1,
                     color,
                 )
         else:
-            color = BLACK if grid.original[i] else DKGREY
-            populatecells(
+            if winner:
+                color = GREEN
+            elif grid.original[i]:
+                color = BLACK
+            else:
+                color = MIDBLUEGREY
+            populate_cells(
                 grid.board[i], (i % 9 * CELLSIZE) + 10, (i // 9 * CELLSIZE), color
             )
 
 
-def populatecells(celldata, x, y, color):
+def populate_cells(celldata, x, y, color):
     """
     populatecells(celldata,x,y,color)
     Draws the number the cell is set to in the cell.
@@ -278,7 +294,7 @@ def populatecells(celldata, x, y, color):
     DISPLAYSURF.blit(cellsurf, cellrect)
 
 
-def populatesubcells(celldata, x, y, color):
+def populate_subcells(celldata, x, y, color):
     """
     populatesubcells(celldata,x,y,color)
     Draws a number in a sub-cell. Each cell has 9 sub-cells aranged in a 3x3 grid.
@@ -294,7 +310,7 @@ def populatesubcells(celldata, x, y, color):
     DISPLAYSURF.blit(cellsurf, cellrect)
 
 
-def togglecell(mousex, mousey, grid):
+def toggle_cell(mousex, mousey, grid):
     """
     togglecell(mousex, mousey, grid)
     Sets the value of a cell based the mouse location, and whether or not the cell under the mouse is
@@ -325,7 +341,7 @@ def togglecell(mousex, mousey, grid):
     return grid
 
 
-def togglesubcell(mousex, mousey, grid):
+def toggle_subcell(mousex, mousey, grid):
     """
     togglesubcell(mousex, mousey, grid)
     Colors the number in a sub-cell based the mouse location, and whether or not the sub-cell under the
@@ -359,7 +375,7 @@ def togglesubcell(mousex, mousey, grid):
     return grid
 
 
-def drawbox(mousex, mousey):
+def draw_box(mousex, mousey):
     """
     drawbox(mousex, mousey)
     Draws a box around the sub-cell under the mouse.
@@ -374,7 +390,7 @@ def drawbox(mousex, mousey):
         pygame.draw.rect(DISPLAYSURF, BLUE, (boxx, boxy, NUMSUBSIZE, NUMSUBSIZE), 1)
 
 
-def drawbutton(posx, posy, height, width, text, pressed):
+def draw_button(posx, posy, height, width, text, pressed):
     """
     drawbutton(posx, posy, height, width, text, pressed)
     Draws a button with text.
@@ -406,7 +422,7 @@ def drawbutton(posx, posy, height, width, text, pressed):
         )
     DISPLAYSURF.blit(cellsurf, cellrect)
 
-def drawdifcontrol(dificulty, minuspressed, pluspressed):
+def draw_dif_control(dificulty, minuspressed, pluspressed):
     """ 
     drawdifcontrol(dificulty, minuspressed, pluspressed)
     Draws the dificulty selector control.

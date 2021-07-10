@@ -106,11 +106,10 @@ class Grid:
         for i in range(81):
             rv = True
             if self.board[i] == 0:
-                if len(self.possible[i]) < 1:
-                    rv = False
-                    break
-                else:
+                if len(self.possible[i]) >= 1:
                     continue
+                rv = False
+                break
             if (
                 (self.row(i).count(self.board[i]) > 1)
                 or (self.col(i).count(self.board[i]) > 1)
@@ -130,7 +129,7 @@ def solve(grid, multiple_solutions=False):
     Parameters:
         grid : A Grid object representing the sudoku board to be solved.
         multiple_solutions : A boolean indicating whether or not to keep going after finding one
-                            solution. Defaults to False.
+        solution. Defaults to False.
     """
     solutions = []
     board_stack = []
@@ -229,21 +228,24 @@ def make_playable(grid, dificulty):
     # I'm using number of missing values as a proxy for dificulty for now. May look into adding a 
     # better dificulty heuristic in the future.
     original = grid.board[:]
-    r = rnd.sample(range(81), difs[dificulty])
-    for i in r:
-        grid.board[i] = 0
-    grid.find_possible()
-    unsolved = grid.board[:]
     valid = False
     while not valid:
-        solutions, _ = solve(grid, True)
-        if len(solutions) == 1:
-            valid = True
-        else:
-            i = rnd.choice(r)
-            unsolved[i] = original[i]
-            r.remove(i)
-            grid.board = unsolved[:]
-            grid.find_possible()
+        r = rnd.sample(range(81), difs[dificulty])
+        for i in r:
+            grid.board[i] = 0
+        grid.find_possible()
+        unsolved = grid.board[:]
+        tries = 0
+        while not valid and tries < 3:
+            solutions, _ = solve(grid, True)
+            if len(solutions) == 1:
+                valid = True
+            else:
+                tries += 1
+                i = rnd.choice(r)
+                unsolved[i] = original[i]
+                r.remove(i)
+                grid.board = unsolved[:]
+                grid.find_possible()
     
-    return ([original], Grid(unsolved))
+    return (original, Grid(unsolved))

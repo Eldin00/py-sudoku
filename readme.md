@@ -16,6 +16,5 @@ New button to create a new board at the selected dificulty. Use the dificulty
 selector to change the dificulty level.
 
 Still to do:
-Add a way to check your answers.
-Add an indicator when the board is correctly filled out.
 Improve heuristics for dificulty levels.
+Improve performance for generating high-dificulty boards.
